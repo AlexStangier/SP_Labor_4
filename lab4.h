@@ -14,6 +14,7 @@
 #include <unistd.h>
 
 #define MQKEY 1337
+#define MQRKEY 1338
 
 extern pthread_mutex_t lock;
 
@@ -47,7 +48,7 @@ void *statisticThread(void *args);
 
 void *responseThread(void *args);
 
-void killAllMessageQueues(int squeue, int rqueue);
+int killAllMessageQueues();
 
 #endif
 

@@ -4,7 +4,7 @@ extern int errno;
 
 void *statisticThread(void *args) {
     int seek = 0;
-    ssize_t bytesread = 0;
+//    ssize_t bytesread = 0;
 
     struct threadworkermessage *local = malloc(sizeof(struct threadworkermessage));
     memcpy(local, args, sizeof(struct threadworkermessage));

@@ -2,10 +2,17 @@
 
 pthread_mutex_t lock;
 
-void killAllMessageQueues(int clientqueue, int serverqueue) {
-    char command[256];
-    sprintf(command, "ipcrm -q %d -q %d", clientqueue, serverqueue);
-    system(command);
+int killAllMessageQueues() {
+    char *command = malloc(256 * sizeof(char));
+    int written = 0;
+    if ((written = sprintf(command, "ipcrm -q %d -q %d", MQKEY, MQRKEY) > 0)) {
+        system(command);
+        free(command);
+        return EXIT_SUCCESS;
+    } else {
+        perror("failed to destroy message queues.\n");
+        return EXIT_FAILURE;
+    }
 }
 
 int main() {
@@ -15,7 +22,7 @@ int main() {
     short fd;
     if ((msqid = msgget(MQKEY, IPC_CREAT | S_IRWXU)) == -1) {
         perror("Failed to create Message Queue:");
-        killAllMessageQueues(msqid, 0);
+        killAllMessageQueues();
         return EXIT_FAILURE;
     }
 
@@ -26,7 +33,7 @@ int main() {
         int sizereceived;
         if ((sizereceived = msgrcv(msqid, &request, sizeof(struct requestmessage) - sizeof(long), 0, 0)) == -1) {
             perror("[19]Message receive failed ");
-            killAllMessageQueues(msqid, 0);
+            killAllMessageQueues();
             return EXIT_FAILURE;
         } else {
             //check termination
@@ -91,7 +98,7 @@ int main() {
                 //do statistics stuff
                 if ((msqidres = msgget(request.responsequeuekey, IPC_CREAT | S_IRWXU)) == -1) {
                     perror("[83]Failed to create Message Queue to send result:");
-                    killAllMessageQueues(msqid, request.responsequeuekey);
+                    killAllMessageQueues();
                     return EXIT_FAILURE;
                 }
 
@@ -101,7 +108,7 @@ int main() {
 
                 if (msgsnd(msqidres, &serverresponse, sizeof(struct serverresponsemessage) - sizeof(long), 0) == -1) {
                     perror("Message send failed: \n");
-                    killAllMessageQueues(msqid, request.responsequeuekey);
+                    killAllMessageQueues();
                 } else {
                     printf("response send\n");
                 }
