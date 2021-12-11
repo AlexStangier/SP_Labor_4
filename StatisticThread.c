@@ -12,23 +12,21 @@ void *statisticThread(void *args) {
     char *buffer = malloc(sizeof(char) * local->blocksize);
 
     struct threadresponsemessage *response = malloc(sizeof(struct threadresponsemessage));
-    response->bytesread = 1337;
-    response->checksum = 69;
-    response->executiontime = 420;
-
-    usleep(10000000);
+    response->bytesread = 1;
+    response->checksum = 1;
+    response->executiontime = 1;
 
     pthread_mutex_lock(&lock);
 
     //printf("Thread: lower:%d upper:%d blocksize:%d\n", local->lowerbound, local->upperbound, local->blocksize);
 
-    if ((seek = lseek(local->fd, local->lowerbound, SEEK_CUR)) < 0) {
+    /*if ((seek = lseek(local->fd, local->lowerbound, SEEK_CUR)) < 0) {
         perror("Error while resetting the Read Pointer\n");
         pthread_mutex_unlock(&lock);
         free(buffer);
         free(local);
         return (void *) NULL;
-    }
+    }*/
 
 
     //printf("begin read\n");

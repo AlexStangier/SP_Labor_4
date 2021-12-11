@@ -103,6 +103,11 @@ int main() {
                 return EXIT_FAILURE;
             }
 
+            //reset entries
+            serverresponse.bytesread = 0;
+            serverresponse.checksum = 0;
+
+
             int i = 0;
             for (i = 0; i < request.amountthreads; i++) {
                 struct threadresponsemessage *threadata;
@@ -120,13 +125,10 @@ int main() {
             if (msgsnd(msqidres, &serverresponse, sizeof(struct serverresponsemessage) - sizeof(long), 0) == -1) {
                 perror("[120]Message send failed: \n");
                 killAllMessageQueues();
+                return EXIT_FAILURE;
             }
 
             printf("Response send.\n");
         }
     }
-
-    pthread_mutex_destroy(&lock);
-
-    return EXIT_SUCCESS;
 }

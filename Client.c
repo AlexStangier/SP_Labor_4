@@ -35,16 +35,7 @@ int main() {
     printf("send queue: %d\n", msqidsend);
     printf("recv queue: %d\n", msqidrecv);
 
-    /**
-     * GET RESPONSE
-    */
 
-    pthread_t tid = 0;
-    if ((createret = pthread_create(&tid, NULL, responseThread, (void *) &msqidrecv)) != 0) {
-        perror("[44]Failed to create listening thread:\n");
-        killAllMessageQueues();
-        return EXIT_FAILURE;
-    }
 
     int amountthreads = 0;
     while (1) {
@@ -61,6 +52,17 @@ int main() {
         request.responsequeuekey = MQRKEY;
 
         /**
+         * START LISTENING
+         */
+
+        pthread_t tid = 0;
+        if ((createret = pthread_create(&tid, NULL, responseThread, (void *) &msqidrecv)) != 0) {
+            perror("[44]Failed to create listening thread:\n");
+            killAllMessageQueues();
+            return EXIT_FAILURE;
+        }
+
+        /**
          * SEND REQUEST
          */
 
@@ -71,18 +73,18 @@ int main() {
             return EXIT_FAILURE;
         }
 
+        /**
+         * GET RESPONSE
+        */
+
         printf("Waiting for response.\n");
         struct serverresponsemessage *response;
         if ((joinret = pthread_join(tid, (void **) &response)) == 0) {
             printf("Received response.\n");
         } else {
-            perror("[79]Failed to receive resopnse\n");
+            perror("[79]Failed to receive response\n");
         }
 
         printf("Received From thread: %d\n", response->checksum);
-
-        //printf("received from server: cs:%d br:%d\n", response->checksum, response->bytesread);
-        //killAllMessageQueues();
-        //return EXIT_SUCCESS;
     }
 }
