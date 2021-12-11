@@ -16,9 +16,11 @@ void *statisticThread(void *args) {
     response->checksum = 69;
     response->executiontime = 420;
 
+    usleep(10000000);
+
     pthread_mutex_lock(&lock);
 
-    printf("Thread: lower:%d upper:%d blocksize:%d\n", local->lowerbound, local->upperbound, local->blocksize);
+    //printf("Thread: lower:%d upper:%d blocksize:%d\n", local->lowerbound, local->upperbound, local->blocksize);
 
     if ((seek = lseek(local->fd, local->lowerbound, SEEK_CUR)) < 0) {
         perror("Error while resetting the Read Pointer\n");
@@ -26,11 +28,10 @@ void *statisticThread(void *args) {
         free(buffer);
         free(local);
         return (void *) NULL;
-    } else {
-        printf("lseek completed: %d\n", seek);
     }
 
-    printf("begin read\n");
+
+    //printf("begin read\n");
     /*bytesread = read(local->fd, buffer, local->blocksize);
     if (bytesread > 0) {
         printf("read: %zd\n", bytesread);

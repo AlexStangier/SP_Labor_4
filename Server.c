@@ -31,6 +31,8 @@ int main() {
     while (1) {
         struct requestmessage request;
         int sizereceived;
+
+        //Start listening fro requests
         if ((sizereceived = msgrcv(msqid, &request, sizeof(struct requestmessage) - sizeof(long), 0, 0)) == -1) {
             perror("[19]Message receive failed ");
             killAllMessageQueues();
@@ -38,36 +40,38 @@ int main() {
         } else {
             //check termination
             if (request.file[0] == 'q' && request.file[1] != '0') {
-                system("ipcrm -a");
+                killAllMessageQueues();
                 printf("Server Shutdown.\n");
             }
 
             if (pthread_mutex_init(&lock, NULL) != 0) {
-                perror("mutex failed\n");
+                perror("[48]Mutex failed\n");
             }
 
             if ((fd = open(request.file, O_RDONLY) == -1)) {
-                perror("Failed to open the specified file: ");
+                perror("[52]Failed to open the specified file: ");
             }
 
-            printf("fd server: %d\n", fd);
-
-            printf("received from client: %s, %d\n", request.file, request.amountthreads);
-
+            //Get filesize
             struct stat sb;
             if (stat(request.file, &sb) == -1) {
                 perror("stat failed");
             }
-
             int filesize = sb.st_size;
 
-            printf("filesize: %d\n", filesize);
+            printf("Received request from Client: [%s, %d] -> file is %dB big\n", request.file, request.amountthreads,
+                   filesize);
 
+            /**
+             * START THREADS
+             */
+
+            pthread_t tids[request.amountthreads];
             for (int i = 0; i < request.amountthreads; i++) {
                 struct threadworkermessage startmsg;
                 pthread_t tid;
 
-                //calc lower bound of data
+                //calc thread boundaries for reading the data
                 if (i == 0) { startmsg.lowerbound = 0; }
                 else {
                     startmsg.lowerbound = (int) (i * (filesize / request.amountthreads));
@@ -80,39 +84,45 @@ int main() {
                     startmsg.upperbound += (filesize % request.amountthreads);
                 }
 
-                printf("creating stat thread with read from: %d to %d\n", startmsg.lowerbound, startmsg.upperbound);
+                printf("Creating Statistic Thread with bounds [%d;%d]\n", startmsg.lowerbound, startmsg.upperbound);
 
                 startmsg.fd = fd;
-
                 startmsg.blocksize = startmsg.upperbound - startmsg.lowerbound;
 
+                //Start thread
                 pthread_create(&tid, NULL, statisticThread, &startmsg);
-                struct threadresponsemessage *response;
-                pthread_join(tid, (void **) &response);
-
-                printf("thread exited bytes_read:%d cs:%d ex time:%d\n", response->bytesread, response->checksum,
-                       response->executiontime);
-
-                printf("before response send\n");
-
-                //do statistics stuff
-                if ((msqidres = msgget(request.responsequeuekey, IPC_CREAT | S_IRWXU)) == -1) {
-                    perror("[83]Failed to create Message Queue to send result:");
-                    killAllMessageQueues();
-                    return EXIT_FAILURE;
-                }
-
-                struct serverresponsemessage serverresponse;
-                serverresponse.checksum = response->checksum;
-                serverresponse.bytesread = response->bytesread;
-
-                if (msgsnd(msqidres, &serverresponse, sizeof(struct serverresponsemessage) - sizeof(long), 0) == -1) {
-                    perror("Message send failed: \n");
-                    killAllMessageQueues();
-                } else {
-                    printf("response send\n");
-                }
+                tids[i] = tid;
             }
+            /**
+             * DATA EVALUATION
+             */
+            struct serverresponsemessage serverresponse;
+            if ((msqidres = msgget(request.responsequeuekey, IPC_CREAT | S_IRWXU)) == -1) {
+                perror("[83]Failed to create Message Queue to send result:");
+                killAllMessageQueues();
+                return EXIT_FAILURE;
+            }
+
+            int i = 0;
+            for (i = 0; i < request.amountthreads; i++) {
+                struct threadresponsemessage *threadata;
+                pthread_join(tids[i], (void **) &threadata);
+
+                serverresponse.bytesread += threadata->bytesread;
+                serverresponse.checksum += threadata->checksum;
+            }
+
+            printf("Results: br: %d cs: %d\n", serverresponse.bytesread, serverresponse.checksum);
+
+            /**
+             * SEND RESULT
+            */
+            if (msgsnd(msqidres, &serverresponse, sizeof(struct serverresponsemessage) - sizeof(long), 0) == -1) {
+                perror("[120]Message send failed: \n");
+                killAllMessageQueues();
+            }
+
+            printf("Response send.\n");
         }
     }
 

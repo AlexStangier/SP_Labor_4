@@ -54,3 +54,5 @@ int killAllMessageQueues();
 
 //gcc -lm -lpthread Server.c StatisticThread.c -o server -Wall
 //gcc -lm -lpthread Client.c -o client -Wall
+//ipcs -q
+//ipcrm -Q 0x539 -Q 0x53a

@@ -15,19 +15,19 @@ int killAllMessageQueues() {
 
 int main() {
     struct requestmessage request;
-    struct serverresponsemessage *response;
+    //struct serverresponsemessage *response;
 
     //Get Message Queue for sending
     int msqidsend, msqidrecv, createret = 0, joinret = 0;
     if ((msqidsend = msgget(MQKEY, IPC_CREAT | S_IRWXU)) == -1) {
-        perror("Failed to create Message Queue \n");
+        perror("[23]Failed to create Message Queue \n");
         killAllMessageQueues();
         return EXIT_FAILURE;
     }
 
     //Get Message Queue to receive response from server
     if ((msqidrecv = msgget(MQRKEY, IPC_CREAT | S_IRWXU)) == -1) {
-        perror("Failed to create Message Queue \n");
+        perror("[30]Failed to create Message Queue \n");
         killAllMessageQueues();
         return EXIT_FAILURE;
     }
@@ -40,12 +40,11 @@ int main() {
     */
 
     pthread_t tid = 0;
-    if ((createret = pthread_create(&tid, NULL, responseThread, (void *) &msqidrecv)) == 0) {
-        printf("created listening thread\n");
-    } else {
-        perror("failed to create listening thread:\n");
+    if ((createret = pthread_create(&tid, NULL, responseThread, (void *) &msqidrecv)) != 0) {
+        perror("[44]Failed to create listening thread:\n");
+        killAllMessageQueues();
+        return EXIT_FAILURE;
     }
-
 
     int amountthreads = 0;
     while (1) {
@@ -65,25 +64,25 @@ int main() {
          * SEND REQUEST
          */
 
-        printf("sending request: [%s,%d]\n", request.file, request.amountthreads);
+        printf("Sending request: [%s,%d]\n", request.file, request.amountthreads);
         if (msgsnd(msqidsend, &request, sizeof(struct requestmessage) - sizeof(long), 0) == -1) {
-            perror("Message send failed: \n");
+            perror("[69]Message send failed: \n");
             killAllMessageQueues();
             return EXIT_FAILURE;
-        } else {
-            printf("request sent.\n");
         }
 
-        printf("waiting for response.\n");
+        printf("Waiting for response.\n");
+        struct serverresponsemessage *response;
         if ((joinret = pthread_join(tid, (void **) &response)) == 0) {
-            printf("currently waiting for response.\n");
+            printf("Received response.\n");
         } else {
-            perror("failed to receive resopnse\n");
+            perror("[79]Failed to receive resopnse\n");
         }
+
+        printf("Received From thread: %d\n", response->checksum);
 
         //printf("received from server: cs:%d br:%d\n", response->checksum, response->bytesread);
-        killAllMessageQueues();
-        printf("message queues destroyed.\n");
-        return EXIT_SUCCESS;
+        //killAllMessageQueues();
+        //return EXIT_SUCCESS;
     }
 }
