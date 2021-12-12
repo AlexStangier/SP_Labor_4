@@ -19,7 +19,6 @@ void *responseThread(void *args) {
     p->checksum = response.checksum;
     memcpy(p->distribution, response.distribution, sizeof(response.distribution));
 
-
     printf("bytes read: %d checksum: %d\n", response.bytesread, response.checksum);
     pthread_exit((void *) p);
 }

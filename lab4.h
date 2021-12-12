@@ -25,7 +25,7 @@ struct requestmessage {
 };
 
 struct threadworkermessage {
-    int fd;
+    FILE *fd;
     int lowerbound;
     int upperbound;
     int blocksize;
@@ -39,7 +39,7 @@ struct serverresponsemessage {
 
 struct threadresponsemessage {
     int checksum;
-    int bytesread;
+    size_t bytesread;
     int distribution[256];
     int executiontime;
 };

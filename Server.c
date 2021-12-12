@@ -19,9 +19,8 @@ int main() {
     //get message queue
     pthread_mutex_t lock;
     int msqid, msqidres;
-    short fd;
     if ((msqid = msgget(MQKEY, IPC_CREAT | S_IRWXU)) == -1) {
-        perror("Failed to create Message Queue:");
+        perror("Failed to create Message Queue:\n");
         killAllMessageQueues();
         return EXIT_FAILURE;
     }
@@ -30,36 +29,35 @@ int main() {
 
     while (1) {
         struct requestmessage request;
-        int sizereceived;
 
         //Start listening fro requests
+        int sizereceived;
         if ((sizereceived = msgrcv(msqid, &request, sizeof(struct requestmessage) - sizeof(long), 0, 0)) == -1) {
-            perror("[19]Message receive failed ");
+            perror("[19]Message receive failed \n");
             killAllMessageQueues();
             return EXIT_FAILURE;
         } else {
-            //check termination
-            if (request.file[0] == 'q' && request.file[1] != '0') {
-                killAllMessageQueues();
-                printf("Server Shutdown.\n");
-            }
-
             if (pthread_mutex_init(&lock, NULL) != 0) {
                 perror("[48]Mutex failed\n");
             }
 
-            if ((fd = open(request.file, O_RDONLY) == -1)) {
-                perror("[52]Failed to open the specified file: ");
+            FILE *fd = fopen("/Users/alexstangier/Desktop/Labor 4/lab", "r");
+            if (fd == NULL) {
+                printf("File Not Found!\n");
+                return EXIT_FAILURE;
             }
 
-            //Get filesize
-            struct stat sb;
-            if (stat(request.file, &sb) == -1) {
-                perror("stat failed");
+            int rc = 0;
+            if ((rc = fseek(fd, 0L, SEEK_END) != 0)) {
+                perror("[54]Failed to set read pointer\n");
             }
-            int filesize = sb.st_size;
 
-            printf("Received request from Client: [%s, %d] -> file is %dB big\n", request.file, request.amountthreads,
+            long int filesize = ftell(fd);
+            if ((rc = fseek(fd, 0L, SEEK_SET) != 0)) {
+                perror("[59]Failed to set read pointer\n");
+            }
+
+            printf("Received request from Client: [%s, %d] -> file is %ldB big\n", request.file, request.amountthreads,
                    filesize);
 
             /**
@@ -93,22 +91,19 @@ int main() {
                 pthread_create(&tid, NULL, statisticThread, &startmsg);
                 tids[i] = tid;
             }
+
             /**
              * DATA EVALUATION
              */
-            struct serverresponsemessage serverresponse;
+
             if ((msqidres = msgget(request.responsequeuekey, IPC_CREAT | S_IRWXU)) == -1) {
-                perror("[83]Failed to create Message Queue to send result:");
+                perror("[83]Failed to create Message Queue to send result:\n");
                 killAllMessageQueues();
                 return EXIT_FAILURE;
             }
 
-            //reset entries
-            serverresponse.bytesread = 0;
-            serverresponse.checksum = 0;
-
-
             int i = 0;
+            struct serverresponsemessage serverresponse;
             for (i = 0; i < request.amountthreads; i++) {
                 struct threadresponsemessage *threadata;
                 pthread_join(tids[i], (void **) &threadata);
@@ -117,10 +112,8 @@ int main() {
                 serverresponse.checksum += threadata->checksum;
             }
 
-            printf("Results: br: %d cs: %d\n", serverresponse.bytesread, serverresponse.checksum);
-
             /**
-             * SEND RESULT
+             * SEND RESULT AND FREE UP RESSOURCES
             */
             if (msgsnd(msqidres, &serverresponse, sizeof(struct serverresponsemessage) - sizeof(long), 0) == -1) {
                 perror("[120]Message send failed: \n");
@@ -129,6 +122,7 @@ int main() {
             }
 
             printf("Response send.\n");
+            fclose(fd);
         }
     }
 }

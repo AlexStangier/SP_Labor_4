@@ -3,8 +3,8 @@
 extern int errno;
 
 void *statisticThread(void *args) {
-    int seek = 0;
-//    ssize_t bytesread = 0;
+    size_t bytesread = 0;
+    int rc = 0;
 
     struct threadworkermessage *local = malloc(sizeof(struct threadworkermessage));
     memcpy(local, args, sizeof(struct threadworkermessage));
@@ -12,38 +12,38 @@ void *statisticThread(void *args) {
     char *buffer = malloc(sizeof(char) * local->blocksize);
 
     struct threadresponsemessage *response = malloc(sizeof(struct threadresponsemessage));
-    response->bytesread = 1;
-    response->checksum = 1;
-    response->executiontime = 1;
+
+    /**
+     * READ DATA
+     */
 
     pthread_mutex_lock(&lock);
 
-    //printf("Thread: lower:%d upper:%d blocksize:%d\n", local->lowerbound, local->upperbound, local->blocksize);
+    if ((rc = fseek(local->fd, 0L, SEEK_SET) != 0)) {
+        perror("[23]Failed to set read pointer \n");
+    }
 
-    /*if ((seek = lseek(local->fd, local->lowerbound, SEEK_CUR)) < 0) {
-        perror("Error while resetting the Read Pointer\n");
-        pthread_mutex_unlock(&lock);
-        free(buffer);
-        free(local);
-        return (void *) NULL;
-    }*/
-
-
-    //printf("begin read\n");
-    /*bytesread = read(local->fd, buffer, local->blocksize);
-    if (bytesread > 0) {
-        printf("read: %zd\n", bytesread);
-    } else {
-        printf("read: %d\n", errno);
-        perror("read failed: ");
-        pthread_mutex_unlock(&lock);
-        return (void *) NULL;
-    }*/
+    bytesread = fread(buffer, sizeof(char), local->blocksize, local->fd);
 
     pthread_mutex_unlock(&lock);
+
+    /**
+     * ANALYSE DATA
+     **/
+
+    //get char distribution
+    for (size_t i = 0; i < bytesread; i++) {
+        response->checksum += buffer[i];
+        response->distribution[buffer[i]] += 1;
+    }
+
+    response->bytesread = bytesread;
+
+    /**
+     * CLEANUP AND EXIT
+     */
 
     free(buffer);
     free(local);
     pthread_exit((void *) response);
-    return EXIT_SUCCESS;
 }

@@ -15,7 +15,6 @@ int killAllMessageQueues() {
 
 int main() {
     struct requestmessage request;
-    //struct serverresponsemessage *response;
 
     //Get Message Queue for sending
     int msqidsend, msqidrecv, createret = 0, joinret = 0;
@@ -32,14 +31,9 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    printf("send queue: %d\n", msqidsend);
-    printf("recv queue: %d\n", msqidrecv);
-
-
-
+    printf("Client started.\n");
     int amountthreads = 0;
     while (1) {
-
         char file[64];
         printf("Please enter the file name: \n");
         scanf("%64s", file);
@@ -83,8 +77,17 @@ int main() {
             printf("Received response.\n");
         } else {
             perror("[79]Failed to receive response\n");
+            return EXIT_FAILURE;
         }
 
+        /**
+         * DISPLAY RESULTS
+         */
         printf("Received From thread: %d\n", response->checksum);
+
+        /**
+         * FREE UP MEMORY
+         */
+         free(response);
     }
 }
