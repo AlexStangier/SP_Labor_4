@@ -1,18 +1,5 @@
 #include "lab4.h"
 
-int killAllMessageQueues() {
-    char *command = malloc(256 * sizeof(char));
-    int written = 0;
-    if ((written = sprintf(command, "ipcrm -q %d -q %d", MQKEY, MQRKEY) > 0)) {
-        system(command);
-        free(command);
-        return EXIT_SUCCESS;
-    } else {
-        perror("failed to destroy message queues.\n");
-        return EXIT_FAILURE;
-    }
-}
-
 int main() {
     struct requestmessage request;
 
@@ -20,14 +7,12 @@ int main() {
     int msqidsend, msqidrecv, createret = 0, joinret = 0;
     if ((msqidsend = msgget(MQKEY, IPC_CREAT | S_IRWXU)) == -1) {
         perror("[23]Failed to create Message Queue \n");
-        killAllMessageQueues();
         return EXIT_FAILURE;
     }
 
     //Get Message Queue to receive response from server
     if ((msqidrecv = msgget(MQRKEY, IPC_CREAT | S_IRWXU)) == -1) {
         perror("[30]Failed to create Message Queue \n");
-        killAllMessageQueues();
         return EXIT_FAILURE;
     }
 
@@ -48,46 +33,54 @@ int main() {
         /**
          * START LISTENING
          */
-
         pthread_t tid = 0;
         if ((createret = pthread_create(&tid, NULL, responseThread, (void *) &msqidrecv)) != 0) {
             perror("[44]Failed to create listening thread:\n");
-            killAllMessageQueues();
             return EXIT_FAILURE;
         }
 
         /**
          * SEND REQUEST
          */
-
         printf("Sending request: [%s,%d]\n", request.file, request.amountthreads);
         if (msgsnd(msqidsend, &request, sizeof(struct requestmessage) - sizeof(long), 0) == -1) {
             perror("[69]Message send failed: \n");
-            killAllMessageQueues();
             return EXIT_FAILURE;
         }
 
         /**
          * GET RESPONSE
         */
+        struct serverresponsemessage resp;
 
-        printf("Waiting for response.\n");
-        struct serverresponsemessage *response;
-        if ((joinret = pthread_join(tid, (void **) &response)) == 0) {
-            printf("Received response.\n");
+        //Start listening for requests
+        int sizereceived;
+        if ((sizereceived = msgrcv(msqidrecv, &request, sizeof(struct serverresponsemessage) - sizeof(long), 0, 0)) == -1) {
+            perror("[59]Message receive failed \n");
         } else {
-            perror("[79]Failed to receive response\n");
-            return EXIT_FAILURE;
+
+            /**
+             * DISPLAY RESULTS
+             */
+            printf("Received Results from Server:\n");
+            printf("Checksum: %d Execution time: %ldms Bytes read: %ld\n", resp.checksum, resp.executiontime,
+                   resp.bytesread);
+
+            int c = 0;
+            while (c < 256) {
+                printf("%3d %12d ", c, resp.distribution[c++]);
+                printf("%12d ", resp.distribution[c++]);
+                printf("%12d ", resp.distribution[c++]);
+                printf("%12d ", resp.distribution[c++]);
+                printf("%12d ", resp.distribution[c++]);
+                printf("%12d ", resp.distribution[c++]);
+                printf("%12d ", resp.distribution[c++]);
+                printf("%12d \n", resp.distribution[c++]);
+            }
+
+            /**
+             * FREE UP MEMORY
+             */
         }
-
-        /**
-         * DISPLAY RESULTS
-         */
-        printf("Received From thread: %d\n", response->checksum);
-
-        /**
-         * FREE UP MEMORY
-         */
-         free(response);
     }
 }

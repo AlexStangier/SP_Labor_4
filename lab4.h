@@ -1,5 +1,8 @@
 #ifndef lab4
 #define lab4
+#define MQKEY 1337
+#define MQRKEY 1338
+#define CHARSETLENGTH 256
 
 #include <stdlib.h>
 #include <sys/ipc.h>
@@ -12,9 +15,7 @@
 #include <sys/stat.h>
 #include <math.h>
 #include <unistd.h>
-
-#define MQKEY 1337
-#define MQRKEY 1338
+#include <sys/time.h>
 
 extern pthread_mutex_t lock;
 
@@ -26,29 +27,27 @@ struct requestmessage {
 
 struct threadworkermessage {
     FILE *fd;
-    int lowerbound;
-    int upperbound;
-    int blocksize;
+    long lowerbound;
+    long upperbound;
+    long blocksize;
 };
 
 struct serverresponsemessage {
-    int checksum;
-    int bytesread;
-    int distribution[256];
+    unsigned char checksum;
+    size_t bytesread;
+    unsigned int distribution[CHARSETLENGTH];
+    long executiontime;
 };
 
 struct threadresponsemessage {
-    int checksum;
+    unsigned char checksum;
     size_t bytesread;
-    int distribution[256];
-    int executiontime;
+    unsigned int distribution[CHARSETLENGTH];
 };
 
 void *statisticThread(void *args);
 
 void *responseThread(void *args);
-
-int killAllMessageQueues();
 
 #endif
 
