@@ -1,5 +1,7 @@
 #include "lab4.h"
 
+extern int errno;
+
 int main() {
     struct requestmessage request;
 
@@ -20,7 +22,7 @@ int main() {
     int amountthreads = 0;
     while (1) {
         char file[64];
-        printf("Please enter the file name: \n");
+        printf("Please enter the absolute file path: \n");
         scanf("%64s", file);
 
         printf("Please enter the amount of Threads: \n");
@@ -48,34 +50,59 @@ int main() {
             return EXIT_FAILURE;
         }
 
+        printf("vor alloc\n");
         /**
          * GET RESPONSE
         */
-        struct serverresponsemessage resp;
+        struct serverresponsemessage serverresponse;        //BS
+        //struct serverresponsemessage *serverresponse;       //Process finished with exit code 139 (interrupted by signal 11: SIGSEGV)
+        //struct serverresponsemessage *serverresponse = malloc(sizeof(struct serverresponsemessage));    //Process finished with exit code 134 (interrupted by signal 6: SIGABRT)
+
+        printf("vor recv\n");
 
         //Start listening for requests
-        int sizereceived;
-        if ((sizereceived = msgrcv(msqidrecv, &request, sizeof(struct serverresponsemessage) - sizeof(long), 0, 0)) == -1) {
+        int srcv;
+        if ((srcv = msgrcv(msqidrecv, &serverresponse, sizeof(struct serverresponsemessage) - sizeof(long), 0, 0)) ==
+            -1) {
             perror("[59]Message receive failed \n");
+            printf("%d\n", errno);
         } else {
 
+            printf("recv complete -> %d\n", srcv);
             /**
              * DISPLAY RESULTS
              */
-            printf("Received Results from Server:\n");
-            printf("Checksum: %d Execution time: %ldms Bytes read: %ld\n", resp.checksum, resp.executiontime,
-                   resp.bytesread);
+            /*printf("Received Results from Server:\n");
+            printf("Checksum: %d Execution time: %ldms Bytes read: %ld\n", serverresponse->checksum,
+                   serverresponse->executiontime,
+                   serverresponse->bytesread);
 
             int c = 0;
             while (c < 256) {
-                printf("%3d %12d ", c, resp.distribution[c++]);
-                printf("%12d ", resp.distribution[c++]);
-                printf("%12d ", resp.distribution[c++]);
-                printf("%12d ", resp.distribution[c++]);
-                printf("%12d ", resp.distribution[c++]);
-                printf("%12d ", resp.distribution[c++]);
-                printf("%12d ", resp.distribution[c++]);
-                printf("%12d \n", resp.distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
+                printf("%3x|%6d \n", c, serverresponse->distribution[c++]);
+            }*/
+
+            printf("Checksum: %d Execution time: %ldms Bytes read: %ld\n", serverresponse.checksum,
+                   serverresponse.executiontime,
+                   serverresponse.bytesread);
+
+            int c = 0;
+            while (c < 256) {
+                printf("%3x|%6d ", c, serverresponse.distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse.distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse.distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse.distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse.distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse.distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse.distribution[c++]);
+                printf("%3x|%6d \n", c, serverresponse.distribution[c++]);
             }
 
             /**

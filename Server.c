@@ -69,7 +69,7 @@ int main() {
             ///Users/alexstangier/Desktop/Labor4/abc
             ///Users/alexstangier/Desktop/Labor4/lab
             ///Users/alexstangier/Desktop/Labor4/lab.large
-            FILE *fd = fopen("/Users/alexstangier/Desktop/Labor4/abc", "r");
+            FILE *fd = fopen("/Users/alexstangier/Desktop/Labor4/lab", "r");
             if (fd == NULL) {
                 printf("File Not Found!\n");
                 return EXIT_FAILURE;
@@ -119,21 +119,20 @@ int main() {
                     for (int j = 0; j < CHARSETLENGTH; j++) {
                         serverresponse->distribution[j] += threadData[i]->distribution[j];
                     }
-                    printf("i: %d br: %zu cs: %d\n", i, serverresponse->bytesread, serverresponse->checksum);
                 }
             }
 
             printf("final br: %zu cs: %d\n", serverresponse->bytesread, serverresponse->checksum);
             int c = 0;
             while (c < 256) {
-                printf("%3d %12d ", c, serverresponse->distribution[c++]);
-                printf("%12d ", serverresponse->distribution[c++]);
-                printf("%12d ", serverresponse->distribution[c++]);
-                printf("%12d ", serverresponse->distribution[c++]);
-                printf("%12d ", serverresponse->distribution[c++]);
-                printf("%12d ", serverresponse->distribution[c++]);
-                printf("%12d ", serverresponse->distribution[c++]);
-                printf("%12d \n", serverresponse->distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
+                printf("%3x|%6d \n", c, serverresponse->distribution[c++]);
             }
 
             /**
@@ -148,7 +147,7 @@ int main() {
                 return EXIT_FAILURE;
             }
 
-            printf("Response send.\n");
+            printf("Response send. -> %lub\n", sizeof(struct serverresponsemessage));
             fclose(fd);
         }
     }
