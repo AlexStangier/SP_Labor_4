@@ -69,7 +69,7 @@ int main() {
             ///Users/alexstangier/Desktop/Labor4/abc
             ///Users/alexstangier/Desktop/Labor4/lab
             ///Users/alexstangier/Desktop/Labor4/lab.large
-            FILE *fd = fopen("/Users/alexstangier/Desktop/Labor4/lab", "r");
+            FILE *fd = fopen("/Users/alexstangier/Desktop/Labor4/abc", "r");
             if (fd == NULL) {
                 printf("File Not Found!\n");
                 return EXIT_FAILURE;
@@ -98,7 +98,8 @@ int main() {
             /**
              * DATA EVALUATION
              */
-            struct serverresponsemessage *serverresponse = malloc(sizeof(struct serverresponsemessage));
+            //struct serverresponsemessage *serverresponse = malloc(sizeof(struct serverresponsemessage));
+            struct serverresponsemessage serverresponse;
             struct threadresponsemessage *threadData[request.amountthreads];
 
             int threadsLeft = request.amountthreads;
@@ -111,28 +112,32 @@ int main() {
             gettimeofday(&endTime, NULL);
 
             if (threadsLeft == 0) {
+                for (int j = 0; j < CHARSETLENGTH; j++) {
+                    serverresponse.distribution[j] = 0;
+                }
+
                 for (int i = 0; i < request.amountthreads; i++) {
-                    serverresponse->bytesread += threadData[i]->bytesread;
-                    serverresponse->checksum += threadData[i]->checksum;
-                    serverresponse->executiontime =
+                    serverresponse.bytesread += threadData[i]->bytesread;
+                    serverresponse.checksum += threadData[i]->checksum;
+                    serverresponse.executiontime =
                             ((endTime.tv_sec - startTime.tv_sec) * 1000000) + ((endTime.tv_usec - startTime.tv_usec));
                     for (int j = 0; j < CHARSETLENGTH; j++) {
-                        serverresponse->distribution[j] += threadData[i]->distribution[j];
+                        serverresponse.distribution[j] += threadData[i]->distribution[j];
                     }
                 }
             }
 
-            printf("final br: %zu cs: %d\n", serverresponse->bytesread, serverresponse->checksum);
+            printf("final br: %zu cs: %d\n", serverresponse.bytesread, serverresponse.checksum);
             int c = 0;
             while (c < 256) {
-                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
-                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
-                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
-                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
-                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
-                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
-                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
-                printf("%3x|%6d \n", c, serverresponse->distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse.distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse.distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse.distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse.distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse.distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse.distribution[c++]);
+                printf("%3x|%6d ", c, serverresponse.distribution[c++]);
+                printf("%3x|%6d \n", c, serverresponse.distribution[c++]);
             }
 
             /**
@@ -142,6 +147,7 @@ int main() {
                 perror("[83]Failed to create Message Queue to send result:\n");
                 return EXIT_FAILURE;
             }
+
             if (msgsnd(msqidres, &serverresponse, sizeof(struct serverresponsemessage) - sizeof(long), 0) == -1) {
                 perror("[113]Message send failed: \n");
                 return EXIT_FAILURE;

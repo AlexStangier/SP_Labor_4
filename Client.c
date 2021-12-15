@@ -33,15 +33,6 @@ int main() {
         request.responsequeuekey = MQRKEY;
 
         /**
-         * START LISTENING
-         */
-        pthread_t tid = 0;
-        if ((createret = pthread_create(&tid, NULL, responseThread, (void *) &msqidrecv)) != 0) {
-            perror("[44]Failed to create listening thread:\n");
-            return EXIT_FAILURE;
-        }
-
-        /**
          * SEND REQUEST
          */
         printf("Sending request: [%s,%d]\n", request.file, request.amountthreads);

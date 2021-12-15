@@ -26,23 +26,23 @@ struct requestmessage {
 };
 
 struct threadworkermessage {
-    FILE *fd;
+    void *fd;
     long lowerbound;
     long upperbound;
     long blocksize;
 };
 
 struct serverresponsemessage {
-    unsigned char checksum;
+    char checksum;
     size_t bytesread;
-    unsigned int distribution[CHARSETLENGTH];
+    int distribution[CHARSETLENGTH];
     long executiontime;
 };
 
 struct threadresponsemessage {
-    unsigned char checksum;
+    char checksum;
     size_t bytesread;
-    unsigned int distribution[CHARSETLENGTH];
+    int distribution[CHARSETLENGTH];
 };
 
 void *statisticThread(void *args);
