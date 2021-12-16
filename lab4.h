@@ -27,21 +27,21 @@ struct requestmessage {
 
 struct threadworkermessage {
     void *fd;
-    long lowerbound;
-    long upperbound;
-    long blocksize;
+    long long lowerbound;
+    long long upperbound;
+    long long blocksize;
 };
 
 struct serverresponsemessage {
-    char checksum;
-    size_t bytesread;
+    unsigned char checksum;
+    long long bytesread;
     int distribution[CHARSETLENGTH];
     long executiontime;
 };
 
 struct threadresponsemessage {
-    char checksum;
-    size_t bytesread;
+    unsigned char checksum;
+    long long bytesread;
     int distribution[CHARSETLENGTH];
 };
 

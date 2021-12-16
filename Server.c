@@ -2,43 +2,6 @@
 
 pthread_mutex_t lock;
 
-/**
- * Splits the supplied file into n threads
- * @param n amount of partitions
- * @param filesize size of the file
- * @param fd Filepointer for the file
- * @return array of completed threadworkermessages
- */
-void *startThreads(int n, long filesize, FILE *fd) {
-    pthread_t *threadIds = malloc(n * sizeof(pthread_t));
-    for (int i = 0; i < n; i++) {
-        struct threadworkermessage *startmsg = malloc(sizeof(struct threadworkermessage));
-
-        //calc thread boundaries for reading the data
-        if (i == 0) { startmsg->lowerbound = 0; }
-        else {
-            startmsg->lowerbound = (int) (i * (filesize / n));
-        }
-
-        startmsg->upperbound = (int) ((i + 1) * (filesize / n));
-
-        int remainder = filesize % n;
-        if (i == (n - 1)) startmsg->upperbound += remainder;
-
-        startmsg->fd = fd;
-        startmsg->blocksize = startmsg->upperbound - startmsg->lowerbound;
-
-        pthread_t tid;
-        pthread_create(&tid, NULL, statisticThread, startmsg);
-
-        printf("Created Statistic Thread with bounds [%ld;%ld] -> Blocksize => [%ld]\n", startmsg->lowerbound,
-               startmsg->upperbound, startmsg->blocksize);
-
-        threadIds[i] = tid;
-    }
-    return threadIds;
-}
-
 int main() {
     //get message queue
     system("ipcrm -Q 0x539 -Q 0x53a");
@@ -69,7 +32,7 @@ int main() {
             ///Users/alexstangier/Desktop/Labor4/abc
             ///Users/alexstangier/Desktop/Labor4/lab
             ///Users/alexstangier/Desktop/Labor4/lab.large
-            FILE *fd = fopen("/Users/alexstangier/Desktop/Labor4/abc", "r");
+            FILE *fd = fopen("/Users/alexstangier/Desktop/Labor4/lab", "rb");
             if (fd == NULL) {
                 printf("File Not Found!\n");
                 return EXIT_FAILURE;
@@ -93,7 +56,31 @@ int main() {
             /**
              * START THREADS
              */
-            pthread_t *completedThreads = startThreads(request.amountthreads, filesize, fd);
+            //pthread_t completedThreads = startThreads(request.amountthreads, filesize, fd);
+
+            pthread_t child[request.amountthreads];
+            struct threadworkermessage startmsg;
+            for (int i = 0; i < request.amountthreads; i++) {
+                //calc thread boundaries for reading the data
+                if (i == 0) {
+                    startmsg.lowerbound = 0;
+                } else {
+                    startmsg.lowerbound = (i * (filesize / request.amountthreads)) ;
+                }
+
+                startmsg.upperbound = ((i + 1) * (filesize / request.amountthreads) - 1);
+
+                if (i == (request.amountthreads - 1)) startmsg.upperbound = filesize;
+
+                startmsg.fd = fd;
+                startmsg.blocksize = startmsg.upperbound - startmsg.lowerbound;
+
+                pthread_create(&child[i], NULL, statisticThread, &startmsg);
+
+                printf("Created Statistic Thread with bounds [%lld;%lld] -> Blocksize => [%lld]\n", startmsg.lowerbound,
+                       startmsg.upperbound, startmsg.blocksize);
+            }
+
 
             /**
              * DATA EVALUATION
@@ -104,8 +91,8 @@ int main() {
 
             int threadsLeft = request.amountthreads;
             for (int i = 0; i < request.amountthreads; i++) {
-                pthread_join(completedThreads[i], (void **) &threadData[i]);
-                printf("server => cs:%d br:%zu\n", threadData[i]->checksum, threadData[i]->bytesread);
+                pthread_join(child[i], (void **) &threadData[i]);
+                printf("server => cs:%d br:%lld\n", threadData[i]->checksum, threadData[i]->bytesread);
                 threadsLeft--;
             }
 
@@ -124,10 +111,11 @@ int main() {
                     for (int j = 0; j < CHARSETLENGTH; j++) {
                         serverresponse.distribution[j] += threadData[i]->distribution[j];
                     }
+                    serverresponse.checksum = serverresponse.checksum % 256;
                 }
             }
 
-            printf("final br: %zu cs: %d\n", serverresponse.bytesread, serverresponse.checksum);
+            printf("final br: %lld cs: %d\n", serverresponse.bytesread, serverresponse.checksum);
             int c = 0;
             while (c < 256) {
                 printf("%3x|%6d ", c, serverresponse.distribution[c++]);
