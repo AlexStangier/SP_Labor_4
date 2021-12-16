@@ -45,11 +45,7 @@ int main() {
         /**
          * GET RESPONSE
         */
-        struct serverresponsemessage serverresponse;        //BS
-        //struct serverresponsemessage *serverresponse;       //Process finished with exit code 139 (interrupted by signal 11: SIGSEGV)
-        //struct serverresponsemessage *serverresponse = malloc(sizeof(struct serverresponsemessage));    //Process finished with exit code 134 (interrupted by signal 6: SIGABRT)
-
-        printf("vor recv\n");
+        struct serverresponsemessage serverresponse;
 
         //Start listening for requests
         int srcv;
@@ -58,28 +54,6 @@ int main() {
             perror("[59]Message receive failed \n");
             printf("%d\n", errno);
         } else {
-
-            printf("recv complete -> %d\n", srcv);
-            /**
-             * DISPLAY RESULTS
-             */
-            /*printf("Received Results from Server:\n");
-            printf("Checksum: %d Execution time: %ldms Bytes read: %ld\n", serverresponse->checksum,
-                   serverresponse->executiontime,
-                   serverresponse->bytesread);
-
-            int c = 0;
-            while (c < 256) {
-                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
-                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
-                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
-                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
-                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
-                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
-                printf("%3x|%6d ", c, serverresponse->distribution[c++]);
-                printf("%3x|%6d \n", c, serverresponse->distribution[c++]);
-            }*/
-
             printf("Checksum: %d Execution time: %ldms Bytes read: %ld\n", serverresponse.checksum,
                    serverresponse.executiontime,
                    serverresponse.bytesread);
@@ -95,10 +69,6 @@ int main() {
                 printf("%3x|%6d ", c, serverresponse.distribution[c++]);
                 printf("%3x|%6d \n", c, serverresponse.distribution[c++]);
             }
-
-            /**
-             * FREE UP MEMORY
-             */
         }
     }
 }

@@ -56,26 +56,28 @@ int main() {
             /**
              * START THREADS
              */
-            //pthread_t completedThreads = startThreads(request.amountthreads, filesize, fd);
-
             pthread_t child[request.amountthreads];
-            struct threadworkermessage startmsg;
+            struct threadworkermessage workermessages[request.amountthreads];
+
             for (int i = 0; i < request.amountthreads; i++) {
+                struct threadworkermessage startmsg;
                 //calc thread boundaries for reading the data
                 if (i == 0) {
                     startmsg.lowerbound = 0;
                 } else {
-                    startmsg.lowerbound = (i * (filesize / request.amountthreads)) ;
+                    startmsg.lowerbound = (i * (filesize / request.amountthreads));
                 }
 
-                startmsg.upperbound = ((i + 1) * (filesize / request.amountthreads) - 1);
+                startmsg.upperbound = ((i + 1) * (filesize / request.amountthreads) - 1); //-1
 
                 if (i == (request.amountthreads - 1)) startmsg.upperbound = filesize;
 
                 startmsg.fd = fd;
                 startmsg.blocksize = startmsg.upperbound - startmsg.lowerbound;
 
-                pthread_create(&child[i], NULL, statisticThread, &startmsg);
+                workermessages[i] = startmsg;
+
+                pthread_create(&child[i], NULL, statisticThread, &workermessages[i]);
 
                 printf("Created Statistic Thread with bounds [%lld;%lld] -> Blocksize => [%lld]\n", startmsg.lowerbound,
                        startmsg.upperbound, startmsg.blocksize);
@@ -85,7 +87,6 @@ int main() {
             /**
              * DATA EVALUATION
              */
-            //struct serverresponsemessage *serverresponse = malloc(sizeof(struct serverresponsemessage));
             struct serverresponsemessage serverresponse;
             struct threadresponsemessage *threadData[request.amountthreads];
 
@@ -99,9 +100,13 @@ int main() {
             gettimeofday(&endTime, NULL);
 
             if (threadsLeft == 0) {
+
                 for (int j = 0; j < CHARSETLENGTH; j++) {
                     serverresponse.distribution[j] = 0;
                 }
+                serverresponse.checksum = 0;
+                serverresponse.bytesread = 0;
+                serverresponse.executiontime = 0;
 
                 for (int i = 0; i < request.amountthreads; i++) {
                     serverresponse.bytesread += threadData[i]->bytesread;
@@ -115,18 +120,7 @@ int main() {
                 }
             }
 
-            printf("final br: %lld cs: %d\n", serverresponse.bytesread, serverresponse.checksum);
-            int c = 0;
-            while (c < 256) {
-                printf("%3x|%6d ", c, serverresponse.distribution[c++]);
-                printf("%3x|%6d ", c, serverresponse.distribution[c++]);
-                printf("%3x|%6d ", c, serverresponse.distribution[c++]);
-                printf("%3x|%6d ", c, serverresponse.distribution[c++]);
-                printf("%3x|%6d ", c, serverresponse.distribution[c++]);
-                printf("%3x|%6d ", c, serverresponse.distribution[c++]);
-                printf("%3x|%6d ", c, serverresponse.distribution[c++]);
-                printf("%3x|%6d \n", c, serverresponse.distribution[c++]);
-            }
+            printf("Final bytesread: %lld checksum: %d\n", serverresponse.bytesread, serverresponse.checksum);
 
             /**
              * SEND RESULT AND FREE UP RESOURCES
